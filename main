@@ -1,0 +1,54 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <string>
+#include <iostream>
+
+int main()
+{
+    int sockfd, portno, n;
+    struct sockaddr_in serv_addr = {};
+
+    portno = 12345;
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0){
+        std::cerr << "ERROR opening socket";
+        return -1;
+    }
+    hostent * server = gethostbyname("127.0.0.1");
+    if (server == NULL) {
+        std::cerr << "ERROR, no such host\n";
+        return -1;
+    }
+    serv_addr.sin_family = AF_INET;
+    std::copy((char *)server->h_addr,
+              (char *)server->h_addr + server->h_length,
+              (char *)&serv_addr.sin_addr.s_addr);
+    serv_addr.sin_port = htons(portno);
+    if (connect(sockfd,(struct sockaddr *) &serv_addr,sizeof(serv_addr)) < 0) {
+        std::cerr << "ERROR connecting";
+        return -1;
+    }
+    std::cout << "Please enter the message: ";
+    std::string data;
+    std::cin >> data;
+    n = write(sockfd,data.data(),data.size());
+    if (n < 0){
+         std::cerr << "ERROR writing to socket";
+         return -1;
+    }
+    char buffer[256] = {};
+    n = read(sockfd,buffer,255);
+    if (n < 0){
+        std::cerr << "ERROR reading to socket";
+        return -1;
+    }
+    std::cout << buffer;
+    close(sockfd);
+    return 0;
+}
